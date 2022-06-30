@@ -38,17 +38,14 @@ void foo()
 
   #pragma omp target enter data map(to: f0[0:nt][0:nx][0:ny][0:nz])
 
-  for (int time = 0, t0 = (time)%(2), t1 = (time + 1)%(2); time <= 10; time += 1, t0 = (time)%(2), t1 = (time + 1)%(2))
+  #pragma omp target teams distribute parallel for collapse(3)
+  for (int x = x_m; x <= x_M; x += 1)
   {
-    #pragma omp target teams distribute parallel for collapse(3)
-    for (int x = x_m; x <= x_M; x += 1)
+    for (int y = y_m; y <= y_M; y += 1)
     {
-      for (int y = y_m; y <= y_M; y += 1)
+      for (int z = z_m; z <= z_M; z += 1)
       {
-        for (int z = z_m; z <= z_M; z += 1)
-        {
-          f0[t1][x + 1][y + 1][z + 1] = f0[t0][x + 1][y + 1][z + 1] + 1.0F;
-        }
+        f0[1][x + 1][y + 1][z + 1] = f0[0][x + 1][y + 1][z + 1] + 1.0F;
       }
     }
   }
