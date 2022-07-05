@@ -6,7 +6,7 @@ libname = 'unoffloaded.so'
 lib = npct.load_library(libname, '.')
 lib.name = libname
 
-# `foo` name of entry point in `omp_off_leak_mfe.c`
+# `foo` name of entry point in `unoffloaded.c`
 cfunction = lib.foo
 cfunction.argtypes = []
 

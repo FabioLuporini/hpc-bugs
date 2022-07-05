@@ -4,6 +4,8 @@
 #include "sys/time.h"
 #include "omp.h"
 
+extern "C" void foo();
+
 void foo()
 {
   printf("Running foo()... ");
