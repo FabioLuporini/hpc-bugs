@@ -1,64 +1,37 @@
+#include <mpi.h>
 #include <stdio.h>
-#include "stdlib.h"
-#include "math.h"
-#include "sys/time.h"
+#include <stdlib.h>
 #include "omp.h"
 
 extern "C" void foo();
 
-void foo()
-{
-  printf("Running foo()... ");
+void foo() {
+  MPI_Init(NULL, NULL);
 
-  /* Begin of OpenMP setup */
-  omp_set_default_device(0);
-  /* End of OpenMP setup */
+  int world_rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD,&world_rank);
+  int ngpus = omp_get_num_devices();
+  omp_set_default_device((world_rank)%(ngpus));
 
-  const int x_m = 0;
-  const int y_m = 0;
-  const int z_m = 0;
-
-  const int halox = 2;
-  const int haloy = 2;
-  const int haloz = 2;
-
-  const int x_M = 511;
-  const int y_M = 511;
-  const int z_M = 511;
-
-  const int nt = 2;
-  const int nx = (x_M - x_m + 1) + halox;
-  const int ny = (y_M - y_m + 1) + haloy;
-  const int nz = (z_M - z_m + 1) + haloz;
-  const size_t size = nt*nx*ny*nz;
-  const size_t nbytes = size*sizeof(float);
-
-  float * f0_vec;
-  posix_memalign((void**)(&f0_vec), 64, nbytes);
-
-  float (*restrict f0)[nx][ny][nz] = (float (*)[nx][ny][nz]) f0_vec;
-
-  #pragma omp target enter data map(to: f0[0:nt][0:nx][0:ny][0:nz])
-
-  for (int time = 0, t0 = (time)%(2), t1 = (time + 1)%(2); time <= 10; time += 1, t0 = (time)%(2), t1 = (time + 1)%(2))
-  {
-    #pragma omp target teams distribute parallel for collapse(3)
-    for (int x = x_m; x <= x_M; x += 1)
-    {
-      for (int y = y_m; y <= y_M; y += 1)
-      {
-        for (int z = z_m; z <= z_M; z += 1)
-        {
-          f0[t1][x + 1][y + 1][z + 1] = f0[t0][x + 1][y + 1][z + 1] + 1.0F;
-        }
-      }
-    }
+  int world_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  if (world_size < 2) {
+    fprintf(stderr, "World size must be greater than 1\n");
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  #pragma omp target update from(f0[0:nt][0:nx][0:ny][0:nz])
-  #pragma omp target exit data map(release: f0[0:nt][0:nx][0:ny][0:nz])
+  const size_t nfloats = 1000*1000*1000;
+  const size_t nbytes = nfloats*sizeof(float);
+  float * f0 = (float *)omp_target_alloc(nbytes, omp_get_default_device());
 
-  free(f0_vec);
+  if (world_rank == 0) {
+    MPI_Send(f0, nfloats, MPI_FLOAT, 1, 0, MPI_COMM_WORLD);
+  } else if (world_rank == 1) {
+    MPI_Recv(f0, nfloats, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  }
 
-  printf("DONE!\n");
+  omp_target_free(f0, omp_get_default_device());
+
+
+  MPI_Finalize();
 }
