@@ -8,11 +8,11 @@
 
 using namespace sycl;
 
-extern "C" void foo0();
+extern "C" void foo();
 
-void foo0()
+void foo()
 {
-  printf("Running foo0()... \n");
+  printf("Running foo()... \n");
 
   queue qid0(cpu_selector_v);
 
@@ -44,6 +44,8 @@ void foo0()
   qid0.submit([&](handler& h)
   {
     h.parallel_for(kr0,[=](id<2> idx)
+    // TODO: UNCOMMENT THIS TO WORK AROUND THE BUG
+    // h.parallel_for<class A>(kr0,[=](id<2> idx)
     {
       int x = x_m + (int)(idx[0]);
       int y = y_m + (int)(idx[1]);
