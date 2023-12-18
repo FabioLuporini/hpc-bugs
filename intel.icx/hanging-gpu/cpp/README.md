@@ -7,3 +7,5 @@ Thread model: posix
 InstalledDir: /opt/intel/oneapi/compiler/2024.0/bin/compiler
 Configuration file: /opt/intel/oneapi/compiler/2024.0/bin/compiler/../icpx.cfg
 ```
+
+The error was observed on an Intel MAX 1550
